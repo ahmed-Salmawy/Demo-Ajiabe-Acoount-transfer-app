@@ -48,6 +48,9 @@ public class AccountService {
 
 
     public void transfer(@Valid TransferRequest request) {
+        if (request.fromAccount().equals(request.toAccount())) {
+            throw new CustomBadRequestException("Cannot transfer to the same account");
+        }
 
         if (accounts.get(request.fromAccount()) == null) {
             throw new CustomBadRequestException("from account of id %s not found ".formatted(request.fromAccount()));
