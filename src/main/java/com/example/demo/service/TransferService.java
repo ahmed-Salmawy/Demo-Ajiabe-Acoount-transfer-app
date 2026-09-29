@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class TransferService {
@@ -19,8 +20,8 @@ public class TransferService {
     private final AccountService accountService;
     private final TransactionSequenceGenerator sequenceGenerator;
 
-    public TransferService(Map<String, Transaction> transactions, AccountService accountService, TransactionSequenceGenerator sequenceGenerator) {
-        this.transactions = transactions;
+    public TransferService(AccountService accountService, TransactionSequenceGenerator sequenceGenerator) {
+        this.transactions = new ConcurrentHashMap<>();
         this.accountService = accountService;
         this.sequenceGenerator = sequenceGenerator;
     }

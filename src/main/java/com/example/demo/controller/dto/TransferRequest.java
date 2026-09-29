@@ -1,6 +1,6 @@
 package com.example.demo.controller.dto;
 
-import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -12,6 +12,6 @@ public record TransferRequest(
         @NotBlank(message = "to account id is required")
         String toAccount,
         @NotNull(message = "amount is required")
-        @Min(value = 1L, message = "amount is required")
+        @DecimalMin(value = "1.00", message = "amount is required")
         BigDecimal amount) {
 }
