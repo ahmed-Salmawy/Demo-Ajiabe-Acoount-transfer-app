@@ -6,18 +6,18 @@ import com.example.demo.service.model.Account;
 import com.example.demo.utility.AccountIdGeneratorUtility;
 import org.springframework.stereotype.Service;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 public class AccountService {
 
-    private final Set<Account> accounts;
+    private final Map<String, Account> accounts;
     private final AccountIdGeneratorUtility accountIdGeneratorUtility;
 
     public AccountService(AccountIdGeneratorUtility accountIdGeneratorUtility) {
         this.accountIdGeneratorUtility = accountIdGeneratorUtility;
-        this.accounts = new HashSet<>();
+        this.accounts = new HashMap<>();
     }
 
     public AccountResponse createAccount(AccountRequestDto requestDto) {
@@ -27,9 +27,9 @@ public class AccountService {
                 .balance(requestDto.balance())
                 .build();
 
-        accounts.add(account);
+        accounts.put(account.getAccountId(), account);
 
-        AccountResponse.builder()
+        return AccountResponse.builder()
                 .accountId(account.getAccountId())
                 .customerId(account.getCustomerId())
                 .balance(account.getBalance())
