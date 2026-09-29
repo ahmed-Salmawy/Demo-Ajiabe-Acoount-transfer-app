@@ -39,16 +39,15 @@ public class TransferService {
         try {
             accountService.transfer(request);
             transaction.setStatus(TransferStatusEnum.COMPETED);
-        } catch (CustomBadRequestException exception) {
-            transaction.setStatus(TransferStatusEnum.FAILED);
-            throw exception;
         } catch (Exception e) {
             transaction.setStatus(TransferStatusEnum.FAILED);
+            if (e instanceof CustomBadRequestException customBadRequestException) {
+                throw customBadRequestException;
+            }
             throw new CustomGeneralPaymentException(e.getMessage());
 
         } finally {
             transactions.put(transaction.getId(), transaction);
-
         }
 
         return TransferResponse.builder().id(transaction.getId())
