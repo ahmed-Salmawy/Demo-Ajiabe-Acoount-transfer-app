@@ -1,6 +1,6 @@
 package com.example.demo.dto;
 
 public enum TransferStatusEnum {
-    COMPETED, FAILED;
+    PENDING,COMPETED, FAILED;
 
 }

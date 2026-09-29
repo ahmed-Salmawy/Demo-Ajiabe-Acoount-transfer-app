@@ -5,6 +5,7 @@ import com.example.demo.controller.dto.TransferRequest;
 import com.example.demo.controller.dto.TransferResponse;
 import com.example.demo.dto.TransferStatusEnum;
 import com.example.demo.exception.CustomBadRequestException;
+import com.example.demo.exception.CustomGeneralPaymentException;
 import com.example.demo.service.model.Transaction;
 import com.example.demo.utility.TransactionSequenceGenerator;
 import jakarta.validation.Valid;
@@ -27,28 +28,27 @@ public class TransferService {
 
     public TransferResponse transfer(@Valid TransferRequest request) {
 
-        Transaction transaction = null;
+        Transaction transaction = Transaction.builder()
+                .id(sequenceGenerator.next())
+                .fromAccount(request.fromAccount())
+                .toAccount(request.toAccount())
+                .amount(request.amount())
+                .status(TransferStatusEnum.PENDING)
+                .build();
 
         try {
             accountService.transfer(request);
-            transaction = Transaction.builder()
-                    .id(sequenceGenerator.next())
-                    .fromAccount(request.fromAccount())
-                    .toAccount(request.toAccount())
-                    .amount(request.amount())
-                    .status(TransferStatusEnum.COMPETED)
-                    .build();
             transaction.setStatus(TransferStatusEnum.COMPETED);
-            transactions.put(transaction.getId(), transaction);
         } catch (CustomBadRequestException exception) {
+            transaction.setStatus(TransferStatusEnum.FAILED);
+            throw exception;
+        } catch (Exception e) {
+            transaction.setStatus(TransferStatusEnum.FAILED);
+            throw new CustomGeneralPaymentException(e.getMessage());
 
-            transaction = Transaction.builder()
-                    .id(sequenceGenerator.next())
-                    .fromAccount(request.fromAccount())
-                    .toAccount(request.toAccount())
-                    .amount(request.amount())
-                    .status(TransferStatusEnum.FAILED)
-                    .build();
+        } finally {
+            transactions.put(transaction.getId(), transaction);
+
         }
 
         return TransferResponse.builder().id(transaction.getId())
