@@ -12,16 +12,19 @@ import org.springframework.stereotype.Service;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Service
 public class AccountService {
 
     private final Map<String, Account> accounts;
     private final AccountIdGeneratorUtility accountIdGeneratorUtility;
+    private final Map<String, ReentrantLock> locks;
 
     public AccountService(AccountIdGeneratorUtility accountIdGeneratorUtility) {
         this.accountIdGeneratorUtility = accountIdGeneratorUtility;
         this.accounts = new ConcurrentHashMap<>();
+        locks = new ConcurrentHashMap<>();
     }
 
     public AccountResponse createAccount(AccountRequestDto requestDto) {
@@ -42,40 +45,47 @@ public class AccountService {
     }
 
 
-    public Optional<Account> getAccountById(String accountId) {
-        return Optional.ofNullable(accounts.get(accountId));
+    public Account getAccountById(String accountId) {
+        return findOrThrow(accountId);
     }
 
+    private ReentrantLock lockFor(String accountId) {
+        return locks.computeIfAbsent(accountId, id -> new ReentrantLock());
+    }
 
     public void transfer(@Valid TransferRequest request) {
-        if (request.fromAccount().equals(request.toAccount())) {
-            throw new CustomBadRequestException("Cannot transfer to the same account");
+
+
+        var firstId = request.fromAccount().compareTo(request.toAccount()) > 0 ? request.fromAccount() : request.toAccount();
+        var secondId = request.fromAccount().compareTo(request.toAccount()) < 0 ? request.toAccount() : request.fromAccount();
+
+        var firstLock = lockFor(firstId);
+        var secondLock = lockFor(secondId);
+
+        firstLock.lock();
+        try {
+            secondLock.lock();
+            try {
+                var fromAccount = findOrThrow(request.fromAccount());
+                var toAccount = findOrThrow(request.toAccount());
+                if (accounts.get(request.toAccount()) == null) {
+                    throw new CustomBadRequestException("to account of id %s not found ".formatted(request.toAccount()));
+                }
+                fromAccount.setBalance(fromAccount.getBalance().subtract(request.amount()));
+                toAccount.setBalance(toAccount.getBalance().add(request.amount()));
+            } finally {
+                secondLock.unlock();
+            }
+        } finally {
+            firstLock.unlock();
         }
-
-        if (accounts.get(request.fromAccount()) == null) {
-            throw new CustomBadRequestException("from account of id %s not found ".formatted(request.fromAccount()));
-        }
-
-        if (accounts.get(request.toAccount()) == null) {
-            throw new CustomBadRequestException("to account of id %s not found ".formatted(request.toAccount()));
-        }
-        var fromAccount = accounts.get(request.fromAccount());
-
-        if (request.amount().compareTo(fromAccount.getBalance()) > 0) {
-            throw new CustomBadRequestException("Balance is not sufficient ");
-        }
-
-        accounts.computeIfPresent(request.fromAccount(), (id, account) -> {
-            account.setBalance(account.getBalance().subtract(request.amount()));
-            return account;
-        });
-        accounts.computeIfPresent(request.toAccount(), (id, account) -> {
-            account.setBalance(account.getBalance().add(request.amount()));
-            return account;
-        });
-
-
     }
 
+
+    private Account findOrThrow(String accountId) {
+
+        return Optional.ofNullable(accounts.get(accountId)).orElseThrow(() -> new CustomBadRequestException("account of id %s not found ".formatted(accountId)));
+
+    }
 
 }
