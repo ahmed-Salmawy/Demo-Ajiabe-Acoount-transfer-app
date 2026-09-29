@@ -5,13 +5,11 @@ import com.example.demo.controller.dto.TransferRequest;
 import com.example.demo.controller.dto.TransferResponse;
 import com.example.demo.dto.TransferStatusEnum;
 import com.example.demo.exception.CustomBadRequestException;
-import com.example.demo.service.model.Account;
 import com.example.demo.service.model.Transaction;
 import com.example.demo.utility.TransactionSequenceGenerator;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.util.Map;
 
 @Service
@@ -28,35 +26,29 @@ public class TransferService {
 
 
     public TransferResponse transfer(@Valid TransferRequest request) {
-        //validate accounts exists;
-        var fromAccount = accountService.getAccountById(request.fromAccount());
-        var toAccount = accountService.getAccountById(request.toAccount());
-        if (toAccount.isEmpty()) {
-            throw new CustomBadRequestException("to Account is not valid");
 
-        }
-        if (fromAccount.isEmpty()) {
-            throw new CustomBadRequestException("from account is not valid");
-        }
-        if (request.amount().compareTo(fromAccount.map(Account::getBalance).orElse(BigDecimal.ZERO)) > 0) {
-            throw new CustomBadRequestException("Balance is not sufficient ");
-        }
-        var transaction = Transaction.builder()
-                .id(sequenceGenerator.next())
-                .fromAccount(request.fromAccount())
-                .toAccount(request.toAccount())
-                .amount(request.amount())
-                .status(TransferStatusEnum.PENDING)
-                .build();
+        Transaction transaction = null;
 
         try {
-            accountService.deduct(request.fromAccount(), request.amount());
-            accountService.deposit(request.toAccount(), request.amount());
+            accountService.transfer(request);
+            transaction = Transaction.builder()
+                    .id(sequenceGenerator.next())
+                    .fromAccount(request.fromAccount())
+                    .toAccount(request.toAccount())
+                    .amount(request.amount())
+                    .status(TransferStatusEnum.COMPETED)
+                    .build();
             transaction.setStatus(TransferStatusEnum.COMPETED);
             transactions.put(transaction.getId(), transaction);
         } catch (CustomBadRequestException exception) {
 
-
+            transaction = Transaction.builder()
+                    .id(sequenceGenerator.next())
+                    .fromAccount(request.fromAccount())
+                    .toAccount(request.toAccount())
+                    .amount(request.amount())
+                    .status(TransferStatusEnum.FAILED)
+                    .build();
         }
 
         return TransferResponse.builder().id(transaction.getId())
