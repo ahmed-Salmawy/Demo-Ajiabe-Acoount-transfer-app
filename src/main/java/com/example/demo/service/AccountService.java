@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class AccountService {
@@ -35,6 +36,11 @@ public class AccountService {
                 .balance(account.getBalance())
                 .build();
 
+    }
+
+
+    public Optional<Account> getAccountById(String accountId) {
+        return Optional.ofNullable(accounts.get(accountId));
     }
 
 }
