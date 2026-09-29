@@ -48,10 +48,16 @@ public class TransferService {
                 .amount(request.amount())
                 .status(TransferStatusEnum.PENDING)
                 .build();
-        accountService.deposit(request.fromAccount(),request.amount());
-        accountService.deduct(request.toAccount(),request.amount());
-        transactions.put(transaction.getId(), transaction);
 
+        try {
+            accountService.deduct(request.fromAccount(), request.amount());
+            accountService.deposit(request.toAccount(), request.amount());
+            transaction.setStatus(TransferStatusEnum.COMPETED);
+            transactions.put(transaction.getId(), transaction);
+        } catch (CustomBadRequestException exception) {
+
+
+        }
 
         return TransferResponse.builder().id(transaction.getId())
                 .fromAccount(transaction.getFromAccount())
