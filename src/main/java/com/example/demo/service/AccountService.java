@@ -68,8 +68,10 @@ public class AccountService {
             try {
                 var fromAccount = findOrThrow(request.fromAccount());
                 var toAccount = findOrThrow(request.toAccount());
-                if (accounts.get(request.toAccount()) == null) {
-                    throw new CustomBadRequestException("to account of id %s not found ".formatted(request.toAccount()));
+                if (request.amount().compareTo(fromAccount.getBalance()) > 0) {
+
+                    throw new CustomBadRequestException("Insufficient balance");
+
                 }
                 fromAccount.setBalance(fromAccount.getBalance().subtract(request.amount()));
                 toAccount.setBalance(toAccount.getBalance().add(request.amount()));
