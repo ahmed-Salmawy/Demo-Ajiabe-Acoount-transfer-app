@@ -46,9 +46,12 @@ public class TransferService {
                 .fromAccount(request.fromAccount())
                 .toAccount(request.toAccount())
                 .amount(request.amount())
-                .status(TransferStatusEnum.COMPETED)
+                .status(TransferStatusEnum.PENDING)
                 .build();
+        accountService.deposit(request.fromAccount(),request.amount());
+        accountService.deduct(request.toAccount(),request.amount());
         transactions.put(transaction.getId(), transaction);
+
 
         return TransferResponse.builder().id(transaction.getId())
                 .fromAccount(transaction.getFromAccount())
