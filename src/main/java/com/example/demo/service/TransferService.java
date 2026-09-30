@@ -7,6 +7,7 @@ import com.example.demo.dto.TransferStatusEnum;
 import com.example.demo.exception.CustomBadRequestException;
 import com.example.demo.exception.CustomGeneralPaymentException;
 import com.example.demo.exception.CustomPaymentException;
+import com.example.demo.service.mapper.TransferMapper;
 import com.example.demo.service.model.Transaction;
 import com.example.demo.utility.TransactionSequenceGenerator;
 import jakarta.validation.Valid;
@@ -22,8 +23,10 @@ public class TransferService {
     private final Map<String, Transaction> transactions;
     private final AccountService accountService;
     private final TransactionSequenceGenerator sequenceGenerator;
+    private final TransferMapper transferMapper;
 
-    public TransferService(AccountService accountService, TransactionSequenceGenerator sequenceGenerator) {
+    public TransferService(AccountService accountService, TransactionSequenceGenerator sequenceGenerator, TransferMapper transferMapper) {
+        this.transferMapper = transferMapper;
         this.transactions = new ConcurrentHashMap<>();
         this.accountService = accountService;
         this.sequenceGenerator = sequenceGenerator;
@@ -54,24 +57,15 @@ public class TransferService {
             transactions.put(transaction.getId(), transaction);
         }
 
-        return TransferResponse.builder().id(transaction.getId())
-                .fromAccount(transaction.getFromAccount())
-                .toAccount(transaction.getToAccount())
-                .amount(transaction.getAmount())
-                .staus(transaction.getStatus())
-                .build();
+        return TransferMapper.mapToTransferResponse(transaction);
 
     }
+
 
     public TransferResponse getTransferById(@NotNull String transferId) {
 
         return Optional.ofNullable(this.transactions.get(transferId))
-                .map(transaction -> TransferResponse.builder().id(transaction.getId())
-                        .fromAccount(transaction.getFromAccount())
-                        .toAccount(transaction.getToAccount())
-                        .amount(transaction.getAmount())
-                        .staus(transaction.getStatus())
-                        .build())
+                .map(TransferMapper::mapToTransferResponse)
                 .orElseThrow(() -> new CustomPaymentException(CustomPaymentException.PaymentErrorCode.TRANSFER_NOT_FOUND, "transfer of id %s not found".formatted(transferId)));
     }
 }
