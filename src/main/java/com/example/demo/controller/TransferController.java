@@ -4,10 +4,8 @@ import com.example.demo.controller.dto.TransferRequest;
 import com.example.demo.controller.dto.TransferResponse;
 import com.example.demo.service.TransferService;
 import jakarta.validation.Valid;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import jakarta.validation.constraints.NotNull;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/transfer")
@@ -21,8 +19,17 @@ public class TransferController {
 
 
     @PostMapping
-    public TransferResponse transfer(@RequestBody @Valid TransferRequest payload) {
+    public TransferResponse transfer(@RequestBody @Valid TransferRequest payload, @RequestHeader("Idempotency-Key") String idempotencyKey) {
+
         return service.transfer(payload);
+
+    }
+
+    @GetMapping("/{transferId}")
+    public TransferResponse getTransferById(@NotNull @PathVariable("transferId") String transferId) {
+
+        return service.getTransferById(transferId);
+
     }
 
 }

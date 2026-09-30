@@ -6,12 +6,15 @@ import com.example.demo.controller.dto.TransferResponse;
 import com.example.demo.dto.TransferStatusEnum;
 import com.example.demo.exception.CustomBadRequestException;
 import com.example.demo.exception.CustomGeneralPaymentException;
+import com.example.demo.exception.CustomPaymentException;
 import com.example.demo.service.model.Transaction;
 import com.example.demo.utility.TransactionSequenceGenerator;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
@@ -60,4 +63,15 @@ public class TransferService {
 
     }
 
+    public TransferResponse getTransferById(@NotNull String transferId) {
+
+        return Optional.ofNullable(this.transactions.get(transferId))
+                .map(transaction -> TransferResponse.builder().id(transaction.getId())
+                        .fromAccount(transaction.getFromAccount())
+                        .toAccount(transaction.getToAccount())
+                        .amount(transaction.getAmount())
+                        .staus(transaction.getStatus())
+                        .build())
+                .orElseThrow(() -> new CustomPaymentException(CustomPaymentException.PaymentErrorCode.TRANSFER_NOT_FOUND, "transfer of id %s not found".formatted(transferId)));
+    }
 }
